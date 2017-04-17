@@ -16,6 +16,9 @@ This Azure Resource Template project deploys a set of resources based on the bel
 # Setup Azure Active Directory B2C for your e-commerce site
 Once you have deployed the template succesfully you can set up Azure Active Directory B2C so that it is available to secure your application by following the instructions [here](SaaSecommerce/Docs/ADB2CSetup.md)
 
+# Configure your databases for GEO Replication
+In a multi-region configoration you have a number of choices for how to configure you database geo replication. [Use the Application design for cloud disaster recovery using Active Geo-Replication in SQL Database] (https://docs.microsoft.com/en-us/azure/sql-database/sql-database-designing-cloud-solutions-for-disaster-recovery#design-pattern-2-active-active-deployment-for-application-load-balancing) article to help you decide which method is best for your particular scenario
+
 # Additional Information
 For more information about using this template, see below.
 

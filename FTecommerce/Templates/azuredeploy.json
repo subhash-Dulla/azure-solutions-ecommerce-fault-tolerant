@@ -98,6 +98,10 @@
       "profileName": "[concat(parameters('NamePrefix'),'cdn')]",
       "endpointName": "[concat(parameters('NamePrefix'),'cdnendpoint')]"
     },
+    "TrafficMgr": {
+      "Name": "[tolower(concat(parameters('NamePrefix'),uniqueString(resourceGroup().id)))]",
+      "Dns": "[tolower(concat(parameters('NamePrefix'),'TraffMgr'))]"
+    },
     "Search": {
       "Name": "[toLower(concat(parameters('NamePrefix'),'srch',uniqueString(resourceGroup().id)))]",
       "ReplicaCount": "",
@@ -210,6 +214,54 @@
       },
       "properties": {
         "accountType": "[parameters('StorageType')]"
+      }
+    },
+    {
+      "apiVersion": "2015-11-01",
+      "type": "Microsoft.Network/trafficManagerProfiles",
+      "name": "[variables('TrafficMgr').Name]",
+      "location": "global",
+      "dependsOn": [
+      ],
+      "tags": {
+        "displayName": "Traffic Manager Profile"
+      },
+      "properties": {
+        "profileStatus": "Enabled",
+        "trafficRoutingMethod": "Priority",
+        "dnsConfig": {
+          "relativeName": "[variables('TrafficMgr').Dns]",
+          "ttl": 30
+        },
+        "monitorConfig": {
+          "protocol": "HTTP",
+          "port": 80,
+          "path": "/"
+        },
+        "endpoints": [
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-11-01",
+      "name": "[concat(variables('TrafficMgr').Name,'/',variables('WebSiteName'), copyIndex())]",
+      "copy": {
+        "count": "[length(parameters('WebLocations'))]",
+        "name": "EndPointLoop"
+      },
+      "type": "Microsoft.Network/trafficManagerProfiles/azureEndpoints",
+      "location": "global",
+      "dependsOn": [
+        "[variables('TrafficMgr').Name]",
+        "WebAppLoop"
+      ],
+      "tags": {
+        "displayName": "Traffic Manager Endpoint"
+      },
+      "properties": {
+        "targetResourceId": "[resourceId('Microsoft.Web/sites/',concat(variables('WebSiteName'), copyIndex()))]",
+        "endpointStatus": "Enabled",
+        "priority": "[add(1,copyIndex())]"
       }
     },
     {
