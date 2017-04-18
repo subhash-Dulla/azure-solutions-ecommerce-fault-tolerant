@@ -93,6 +93,7 @@
     "AppPlanName": "[concat(parameters('NamePrefix'),'AppPlan',uniqueString(resourceGroup().id))]",
     "AppInsightsName": "[concat(parameters('NamePrefix'),'Insights')]",
     "ServiceBusNamespaceName": "[concat(parameters('NamePrefix'),'ServiceBus')]",
+    "RecommendationsName": "[concat(parameters('NamePrefix'),'ServiceBus')]",
     "RedisCache": {
       "Name": "[concat(parameters('NamePrefix'),'Redis',uniqueString(resourceGroup().id))]",
       "SKUName": "Basic",
@@ -142,14 +143,18 @@
     {
       "name": "[variables('AppPlanName')]",
       "type": "Microsoft.Web/serverfarms",
-      "location": "[resourceGroup().location]",
+      "copy": {
+        "count": "[length(parameters('WebLocations'))]",
+        "name": "AppSvcLoop"
+      },
+      "location": "[parameters('WebLocations')[copyIndex()]]",
       "apiVersion": "2014-06-01",
       "dependsOn": [],
       "tags": {
         "displayName": "AppPlan"
       },
       "properties": {
-        "name": "[variables('AppPlanName')]",
+        "name": "[concat(variables('AppPlanName'), copyIndex())]",
         "sku": "[parameters('AppPlanSKU')]",
         "workerSize": "[parameters('AppPlanWorkerSize')]",
         "numberOfWorkers": 1
@@ -158,9 +163,15 @@
     {
       "name": "[variables('WebSiteName')]",
       "type": "Microsoft.Web/sites",
-      "location": "[resourceGroup().location]",
+      "copy": {
+        "count": "[length(parameters('WebLocations'))]",
+        "name": "WebAppLoop"
+      },
+      "location": "[parameters('WebLocations')[copyIndex()]]",
       "apiVersion": "2015-08-01",
       "dependsOn": [
+        "AppSvcLoop",
+        "RedisLoop",
         "[concat('Microsoft.Web/serverfarms/', variables('AppPlanName'))]"
       ],
       "tags": {
@@ -175,7 +186,11 @@
     {
       "name": "[variables('WebJobSiteName')]",
       "type": "Microsoft.Web/sites",
-      "location": "[resourceGroup().location]",
+      "copy": {
+        "count": "[length(parameters('WebLocations'))]",
+        "name": "WebJobLoop"
+      },
+      "location": "[parameters('WebLocations')[copyIndex()]]",
       "apiVersion": "2015-08-01",
       "dependsOn": [
         "[concat('Microsoft.Web/serverfarms/', variables('AppPlanName'))]"
@@ -353,6 +368,18 @@
         "replicaCount": "[variables('Search').ReplicaCount]",
         "partitionCount": "[variables('Search').PartitionCount]"
       }
+    },
+    {
+      "name": "[concat(variables('RecommendationsName'), '-', resourceGroup().name)]",
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2017-04-18",
+      "sku": {
+        "name": "F0"
+      },
+      "kind": "Recommendations",
+      "location": "[resourceGroup().location]",
+      "tags": {},
+      "properties": {}
     },
     {
       "name": "[concat(variables('AppPlanName'), '-', resourceGroup().name)]",
