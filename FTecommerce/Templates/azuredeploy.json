@@ -82,11 +82,8 @@
     "WebLocations": {
       "type": "array",
       "defaultValue": [
-        "["WestUS", "EastUS"]"
-      ],
-      "metadata": {
-        "description": "Enter a list of locations where you website will be deployed in the format [<Region 1>, <Region 2>]"
-      }
+        "[resourceGroup().location]"
+      ]
     }
   },
   "variables": {
