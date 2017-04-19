@@ -197,8 +197,11 @@
       "name": "[variables('ServiceBusNamespaceName')]",
       "type": "Microsoft.ServiceBus/namespaces",
       "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "Service Bus Namespace"
+      },
       "properties": {
-        "messagingSku": "1",
+        "messagingSku": "1"
       }
     },
     {
@@ -260,31 +263,28 @@
           "path": "/"
         },
         "endpoints": [
+          {
+            "apiVersion": "2015-11-01",
+            "type": "Microsoft.Network/trafficManagerProfiles/azureEndpoints",
+            "copy": {
+              "count": "[length(parameters('WebLocations'))]",
+              "name": "EndPointLoop"
+            },
+            //"dependsOn": [
+            // "[variables('TrafficMgr').Name]",
+            //  "WebAppLoop"
+            //],
+            "location": "[parameters('WebLocations')[copyIndex()]]",
+            "name": "[concat(variables('TrafficMgr').Name,'/',variables('WebSiteName'), copyIndex())]",
+            "properties": {
+              "targetResourceId": "[resourceId('Microsoft.Web/sites/',concat(variables('WebSiteName'), copyIndex()))]",
+              "endpointStatus": "Enabled",
+              "priority": "[add(1,copyIndex())]"
+            }
+          }
         ]
       }
-    },
-    {
-      "apiVersion": "2015-11-01",
-      "copy": {
-        "count": "[length(parameters('WebLocations'))]",
-        "name": "EndPointLoop"
-      },
-      "dependsOn": [
-        "[variables('TrafficMgr').Name]",
-        "WebAppLoop"
-      ],
-      "location": "global",
-      "name": "[concat(variables('TrafficMgr').Name,'/',variables('WebSiteName'), copyIndex())]",
-      "properties": {
-        "targetResourceId": "[resourceId('Microsoft.Web/sites/',concat(variables('WebSiteName'), copyIndex()))]",
-        "endpointStatus": "Enabled",
-        "priority": "[add(1,copyIndex())]"
-      },
-      "tags": {
-        "displayName": "Traffic Manager Endpoint"
-      },
-      "type": "Microsoft.Network/trafficManagerProfiles/azureEndpoints"
-    },
+     },
     {
       "name": "[variables('SqlName')]",
       "type": "Microsoft.Sql/servers",
@@ -293,7 +293,7 @@
       "dependsOn": [],
       "tags": {
         "displayName": "Sql"
-      },
+        },
       "properties": {
         "administratorLogin": "[parameters('SqlAdminLogin')]",
         "administratorLoginPassword": "[parameters('SqlAdminLoginPassword')]"
@@ -375,7 +375,9 @@
       "sku": {
         "name": "F0"
       },
-      "tags": {},
+      "tags": {
+          "displayName": "Recommendations API"
+      },
       "type": "Microsoft.CognitiveServices/accounts"
     },
     {
@@ -463,9 +465,9 @@
         "condition": {
           "odata.type": "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition",
           "dataSource": {
+            "metricName": "CpuPercentage",
             "odata.type": "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource",
-            "resourceUri": "[concat(resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', variables('AppPlanName'))]",
-            "metricName": "CpuPercentage"
+            "resourceUri": "[concat(resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', variables('AppPlanName'))]"
           },
           "operator": "GreaterThan",
           "threshold": 90,
@@ -596,16 +598,12 @@
       }
     },
     {
-      "name": "[variables('Cdn').profileName]",
-      "type": "Microsoft.Cdn/profiles",
-      "location": "[resourceGroup().location]",
       "apiVersion": "2015-06-01",
       "dependsOn": [
         "[variables('WebSiteName')]"
       ],
-      "tags": {
-        "displayName": "CDN"
-      },
+      "location": "[resourceGroup().location]",
+      "name": "[variables('Cdn').profileName]",
       "properties": {
         "sku": {
           "name": "Standard"
@@ -646,7 +644,11 @@
             ]
           }
         }
-      ]
+      ],
+      "tags": {
+        "displayName": "CDN"
+      },
+      "type": "Microsoft.Cdn/profiles"
     }
   ],
   "outputs": {
