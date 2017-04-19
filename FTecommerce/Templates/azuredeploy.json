@@ -128,15 +128,6 @@
     }
   },
   "resources": [
-     {
-       "apiVersion": "2015-08-01",
-          "name": "[variables('ServiceBusNamespaceName')]",
-          "type": "Microsoft.ServiceBus/namespaces",
-          "location": "[resourceGroup().location]",
-          "properties": {
-            "messagingSku": "1"
-          }
-    },
     {
       "name": "[variables('AppPlanName')]",
       "type": "Microsoft.Web/serverfarms",
@@ -202,10 +193,19 @@
       }
     },
     {
+      "apiVersion": "2015-08-01",
+      "name": "[variables('ServiceBusNamespaceName')]",
+      "type": "Microsoft.ServiceBus/namespaces",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "messagingSku": "1",
+      }
+    },
+    {
       "type": "Microsoft.Cache/Redis",
       "name": "[variables('RedisCache').Name]",
       "apiVersion": "2016-04-01",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('WebLocations')[copyIndex()]]",
       "tags": {
         "displayName": "RedisCache"
       },
@@ -225,17 +225,17 @@
       "dependsOn": []
     },
     {
-      "name": "[variables('StorageName')]",
-      "type": "Microsoft.Storage/storageAccounts",
-      "location": "[resourceGroup().location]",
       "apiVersion": "2015-06-15",
       "dependsOn": [],
+      "location": "[parameters('WebLocations')[copyIndex()]]",
+      "name": "[variables('StorageName')]",
+      "properties": {
+        "accountType": "[parameters('StorageType')]"
+      },
       "tags": {
         "displayName": "Storage"
       },
-      "properties": {
-        "accountType": "[parameters('StorageType')]"
-      }
+      "type": "Microsoft.Storage/storageAccounts"
     },
     {
       "apiVersion": "2015-11-01",
@@ -265,25 +265,25 @@
     },
     {
       "apiVersion": "2015-11-01",
-      "name": "[concat(variables('TrafficMgr').Name,'/',variables('WebSiteName'), copyIndex())]",
       "copy": {
         "count": "[length(parameters('WebLocations'))]",
         "name": "EndPointLoop"
       },
-      "type": "Microsoft.Network/trafficManagerProfiles/azureEndpoints",
-      "location": "global",
       "dependsOn": [
         "[variables('TrafficMgr').Name]",
         "WebAppLoop"
       ],
-      "tags": {
-        "displayName": "Traffic Manager Endpoint"
-      },
+      "location": "global",
+      "name": "[concat(variables('TrafficMgr').Name,'/',variables('WebSiteName'), copyIndex())]",
       "properties": {
         "targetResourceId": "[resourceId('Microsoft.Web/sites/',concat(variables('WebSiteName'), copyIndex()))]",
         "endpointStatus": "Enabled",
         "priority": "[add(1,copyIndex())]"
-      }
+      },
+      "tags": {
+        "displayName": "Traffic Manager Endpoint"
+      },
+      "type": "Microsoft.Network/trafficManagerProfiles/azureEndpoints"
     },
     {
       "name": "[variables('SqlName')]",
@@ -351,32 +351,32 @@
       ]
     },
     {
-      "apiVersion": "2015-02-28",
-      "name": "[variables('Search').Name]",
-      "type": "Microsoft.Search/searchServices",
+      "apiVersion": "2015-08-19",
       "location": "[resourceGroup().location]",
-      "tags": {
-        "displayName": "Search"
-      },
+      "name": "[variables('Search').Name]",
       "properties": {
         "sku": {
           "name": "[toLower(parameters('SearchSku'))]"
         },
         "replicaCount": "[variables('Search').ReplicaCount]",
         "partitionCount": "[variables('Search').PartitionCount]"
-      }
+      },
+      "tags": {
+        "displayName": "Search"
+      },
+      "type": "Microsoft.Search/searchServices"
     },
     {
+      "apiVersion": "2016-02-01-preview",
+      "kind": "Recommendations",
+      "location": "[resourceGroup().location]",
       "name": "[concat(variables('RecommendationsName'), '-', resourceGroup().name)]",
-      "type": "Microsoft.CognitiveServices/accounts",
-      "apiVersion": "2017-04-18",
+      "properties": {},
       "sku": {
         "name": "F0"
       },
-      "kind": "Recommendations",
-      "location": "[resourceGroup().location]",
       "tags": {},
-      "properties": {}
+      "type": "Microsoft.CognitiveServices/accounts"
     },
     {
       "name": "[concat(variables('AppPlanName'), '-', resourceGroup().name)]",
