@@ -208,6 +208,10 @@
       "type": "Microsoft.Cache/Redis",
       "name": "[variables('RedisCache').Name]",
       "apiVersion": "2016-04-01",
+      "copy": {
+        "count": "[length(parameters('WebLocations'))]",
+        "name": "RedisLoop"
+        },
       "location": "[parameters('WebLocations')[copyIndex()]]",
       "tags": {
         "displayName": "RedisCache"
@@ -230,6 +234,10 @@
     {
       "apiVersion": "2015-06-15",
       "dependsOn": [],
+      "copy": {
+        "count": "[length(parameters('WebLocations'))]",
+        "name": "StorageLoop"
+        },
       "location": "[parameters('WebLocations')[copyIndex()]]",
       "name": "[variables('StorageName')]",
       "properties": {
