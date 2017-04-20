@@ -129,7 +129,7 @@
   },
   "resources": [
     {
-      "name": "[variables('AppPlanName')]",
+      "name": "[concat(variables('AppPlanName'),copyIndex())]",
       "type": "Microsoft.Web/serverfarms",
       "copy": {
         "count": "[length(parameters('WebLocations'))]",
@@ -143,36 +143,39 @@
       },
       "properties": {
         "name": "[concat(variables('AppPlanName'), copyIndex())]",
-        "sku": "[parameters('AppPlanSKU')]",
+        //"sku": "[parameters('AppPlanSKU')]",
+        "sku": {
+          "name": "S1",
+          "tier": "Standard"
+        },
         "workerSize": "[parameters('AppPlanWorkerSize')]",
         "numberOfWorkers": 1
       }
     },
     {
-      "name": "[variables('WebSiteName')]",
-      "type": "Microsoft.Web/sites",
+      "apiVersion": "2015-08-01",
       "copy": {
         "count": "[length(parameters('WebLocations'))]",
         "name": "WebAppLoop"
       },
-      "location": "[parameters('WebLocations')[copyIndex()]]",
-      "apiVersion": "2015-08-01",
       "dependsOn": [
         "AppSvcLoop",
         "RedisLoop",
-        "[concat('Microsoft.Web/serverfarms/', variables('AppPlanName'))]"
+        "[concat(variables('AppPlanName'),copyIndex())]"
       ],
+      "location": "[parameters('WebLocations')[copyIndex()]]",
+      "name": "[concat(variables('WebSiteName'), copyindex())]",
+      "properties": {
+        //"name": "[variables('WebSiteName')]",
+        "serverFarmId": "[concat(variables('AppPlanName'),copyIndex())]"
+      },
       "tags": {
-        "[concat('hidden-related:', resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', variables('AppPlanName'))]": "Resource",
         "displayName": "WebSite"
       },
-      "properties": {
-        "name": "[variables('WebSiteName')]",
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms/', variables('AppPlanName'))]"
-      }
+      "type": "Microsoft.Web/sites"
     },
     {
-      "name": "[variables('WebJobSiteName')]",
+      "name": "[concat(variables('WebJobSiteName'), copyindex())]",
       "type": "Microsoft.Web/sites",
       "copy": {
         "count": "[length(parameters('WebLocations'))]",
@@ -181,33 +184,40 @@
       "location": "[parameters('WebLocations')[copyIndex()]]",
       "apiVersion": "2015-08-01",
       "dependsOn": [
-        "[concat('Microsoft.Web/serverfarms/', variables('AppPlanName'))]"
+        "[concat(variables('AppPlanName'),copyIndex())]"
       ],
       "tags": {
-        "[concat('hidden-related:', resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', variables('AppPlanName'))]": "Resource",
         "displayName": "WebJobSite"
       },
       "properties": {
         "name": "[variables('WebJobSiteName')]",
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms/', variables('AppPlanName'))]"
+        "serverFarmId": "[concat(variables('AppPlanName'),copyIndex())]"
       }
     },
     {
       "apiVersion": "2015-08-01",
-      "name": "[variables('ServiceBusNamespaceName')]",
-      "type": "Microsoft.ServiceBus/namespaces",
       "location": "[resourceGroup().location]",
+      "name": "[variables('ServiceBusNamespaceName')]",
+      /*"properties": {
+        "messagingSku": "1"
+      },*/
+      "sku": {
+        "name": "Basic",
+        "tier": "Basic"
+      },
       "tags": {
         "displayName": "Service Bus Namespace"
       },
-      "properties": {
-        "messagingSku": "1"
-      }
+      "type": "Microsoft.ServiceBus/namespaces"
     },
     {
       "type": "Microsoft.Cache/Redis",
-      "name": "[variables('RedisCache').Name]",
+      "name": "[concat(variables('RedisCache').Name, copyindex())]",
       "apiVersion": "2016-04-01",
+      "copy": {
+        "count": "[length(parameters('WebLocations'))]",
+        "name": "RedisLoop"
+        },
       "location": "[parameters('WebLocations')[copyIndex()]]",
       "tags": {
         "displayName": "RedisCache"
@@ -230,12 +240,19 @@
     {
       "apiVersion": "2015-06-15",
       "dependsOn": [],
-      "location": "[parameters('WebLocations')[copyIndex()]]",
-      "name": "[variables('StorageName')]",
-      "properties": {
-        "accountType": "[parameters('StorageType')]"
+      "copy": {
+        "count": "[length(parameters('WebLocations'))]",
+        "name": "StorageLoop"
       },
-      "tags": {
+      "location": "[parameters('WebLocations')[copyIndex()]]",
+      "name": "[concat(variables('StorageName'),copyindex())]",
+      /*"properties": {
+        "accountType": "[parameters('StorageType')]"
+      },*/
+      "sku": {
+        "name": "[parameters('StorageType')]",
+          },
+        "tags": {
         "displayName": "Storage"
       },
       "type": "Microsoft.Storage/storageAccounts"
@@ -245,8 +262,6 @@
       "type": "Microsoft.Network/trafficManagerProfiles",
       "name": "[variables('TrafficMgr').Name]",
       "location": "global",
-      "dependsOn": [
-      ],
       "tags": {
         "displayName": "Traffic Manager Profile"
       },
@@ -270,10 +285,10 @@
               "count": "[length(parameters('WebLocations'))]",
               "name": "EndPointLoop"
             },
-            //"dependsOn": [
-            // "[variables('TrafficMgr').Name]",
-            //  "WebAppLoop"
-            //],
+            /*"dependsOn": [
+            //  "[variables('TrafficMgr').Name]",
+             // "WebAppLoop"
+            ],*/
             "location": "[parameters('WebLocations')[copyIndex()]]",
             "name": "[concat(variables('TrafficMgr').Name,'/',variables('WebSiteName'), copyIndex())]",
             "properties": {
@@ -380,7 +395,7 @@
       },
       "type": "Microsoft.CognitiveServices/accounts"
     },
-    {
+    /*{
       "name": "[concat(variables('AppPlanName'), '-', resourceGroup().name)]",
       "type": "Microsoft.Insights/autoscalesettings",
       "location": "[resourceGroup().location]",
@@ -596,11 +611,11 @@
       "properties": {
         "applicationId": "[variables('WebSiteName')]"
       }
-    },
+    },*/
     {
       "apiVersion": "2015-06-01",
       "dependsOn": [
-        "[variables('WebSiteName')]"
+        "[variables('TrafficMgr').Name]"
       ],
       "location": "[resourceGroup().location]",
       "name": "[variables('Cdn').profileName]",
@@ -622,7 +637,7 @@
             "displayName": "CDNendpoint"
           },
           "properties": {
-            "originHostHeader": "[concat(reference(resourceId('Microsoft.Web/sites', variables('WebSiteName'))).hostNames[0])]",
+            "originHostHeader": "[replace(replace(reference(resourceId('Microsoft.Storage/storageAccounts',variables('StorageName')),'2015-06-15').primaryEndpoints.blob,'https://',''),'/','')]",
             "isHttpAllowed": true,
             "isHttpsAllowed": true,
             "queryStringCachingBehavior": "IgnoreQueryString",
@@ -636,9 +651,9 @@
             "isCompressionEnabled": "True",
             "origins": [
               {
-                "name": "[variables('WebSiteName')]",
+                "name": "[variables('TrafficMgr').Name]",
                 "properties": {
-                  "hostName": "[concat(reference(resourceId('Microsoft.Web/sites', variables('WebSiteName'))).hostNames[0])]"
+                  "hostName": "[replace(replace(reference(resourceId('Microsoft.Storage/storageAccounts',variables('StorageName')),'2015-06-15').primaryEndpoints.blob,'https://',''),'/','')]"
                 }
               }
             ]
@@ -652,15 +667,11 @@
     }
   ],
   "outputs": {
-    "WebsiteHostName": {
-      "value": "[reference(resourceId('Microsoft.Web/sites', variables('WebSiteName'))).hostNames[0])",
-      "type": "string"
+    "TrafficMgrFQDN": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/trafficManagerProfiles', variables('TrafficMgr').Name)).dnsConfig.fqdn]"
     },
-    "WebJobHostName": {
-      "value": "[reference(resourceId('Microsoft.Web/sites', variables('WebJobSiteName'))).hostNames[0]]",
-      "type": "string"
-    },
-    "RedisCacheHostName": {
+    /*"RedisCacheHostName": {
       "value": "[reference(resourceId('Microsoft.Cache/Redis', variables('RedisCache').Name)).hostName]",
       "type": "string"
     },
@@ -671,7 +682,7 @@
     "StorageKey": {
       "type": "securestring",
       "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('StorageName')), '2015-06-15').key1]"
-    },
+    },*/
     "SQLServerFQDN": {
       "value": "[concat(reference(resourceId('Microsoft.Sql/servers', variables('SqlName'))).fullyQualifiedDomainName)]",
       "type": "string"

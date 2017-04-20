@@ -3,7 +3,7 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "NamePrefix": {
-            "value": "mnFTComm"
+            "value": "mnftcomm"
         },
         "SqlAdminLogin": {
             "value": "mattnunn"
